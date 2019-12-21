@@ -9,6 +9,7 @@ public class Server {
 
 	private ServerSocket serverSocket;
 	private ArrayList<Client> clients = new ArrayList<Client>();
+	private final String _ADMIN_PASSWORD_ = "admin"; 
 
 	public Server(int portNumber) throws IOException {
 		serverSocket = new ServerSocket(portNumber);
@@ -20,12 +21,34 @@ public class Server {
             
             (new DataOutputStream(clientSocket.getOutputStream())).writeUTF("Input name to connect: ");
             
-            String name = (new DataInputStream((clientSocket.getInputStream()))).readUTF();
-            
+			String name = (new DataInputStream((clientSocket.getInputStream()))).readUTF();
+			
 			Client client = new Client(clientSocket, name);
+
+			if(name.equals("Admin") || name.equals("admin")){
+				boolean adminFlag = adminConnect(clientSocket);
+				if (!adminFlag) {
+					client.setName("administrator_loh");
+				}
+				client.setRole(adminFlag);
+			}
+
 			ClientThread clientThread = new ClientThread(client);
 			clients.add(client);
 			clientThread.start();
+		}
+	}
+
+	private boolean adminConnect(Socket clientSocket) throws IOException {
+		(new DataOutputStream(clientSocket.getOutputStream())).writeUTF("Input admin password: ");
+		String userPassword = (new DataInputStream((clientSocket.getInputStream()))).readUTF();
+
+		if (userPassword.equals(_ADMIN_PASSWORD_)) {
+			(new DataOutputStream(clientSocket.getOutputStream())).writeUTF("You logined as administrator");
+			return true;
+		}else{
+			(new DataOutputStream(clientSocket.getOutputStream())).writeUTF("Nice try, your name is administrator_loh");
+			return false;
 		}
 	}
 
@@ -58,8 +81,22 @@ public class Server {
 								output.writeUTF("From " + client.getName() + "in private:  " + message.substring(start + 1, message.length()));
 							}
 						}
-					}
-					else {
+					} else if(message.startsWith("@ban") && client.isAdmin()){
+						int start = 5;
+                        
+						while(message.charAt(start) != ' ')
+							start++;
+							
+						String name = message.substring(5, start);
+
+						for (Client c : clients) {
+							if(c.getName().equals(name)) {
+								c.ban();
+								DataOutputStream output =  new DataOutputStream(c.getSocket().getOutputStream());
+								output.writeUTF("You have been banned!");
+							}
+						}
+					} else {
 						for (Client c : clients) {
 							if(!c.getSocket().equals(client.getSocket()))
 								(new DataOutputStream(c.getSocket().getOutputStream())).writeUTF("From " + client.getName() + ":  " + message);

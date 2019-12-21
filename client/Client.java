@@ -10,6 +10,8 @@ public class Client {
 	protected String name;
 	private Sender sender;
 	private Receiver receiver;
+	private boolean admin = false;
+	private boolean ban;
 
 	public Client(Socket socket, String name) throws IOException {
 		this.socket = socket;
@@ -37,9 +39,25 @@ public class Client {
 		return name;
 	}
 
+	public void setName(String name){
+		this.name = name;
+	}
+
 	public Socket getSocket() {
 		return socket;
-	} 
+	}
+
+	public boolean isAdmin(){
+		return admin;
+	}
+
+	public void setRole(boolean role){
+		this.admin = role;
+	}
+
+	public void ban(){
+		ban = true;
+	}
 
 	class Sender extends Thread {
 
